@@ -10,7 +10,6 @@ FOVDegree = 20
 
 catalogue = starTracker.readCatalogue(catalogueFileName)
 catalogue = starTracker.addCartesianCoordinates(catalogue)
-dTable = starTracker.createDistanceTable(catalogue,FOVDegree)
-# print (catalogue.shape)
+starTracker.createDistanceTable(catalogue,FOVDegree)
 
 
