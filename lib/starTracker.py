@@ -59,6 +59,46 @@ def createDistanceTable(catalogue,FOVDegree):
 ############################################################
 # CALCULATE K-VECTOR
 ############################################################
-def createKvector(self):
-    pass
+def createKvector():
+    dTable = pandas.read_csv('./dataset/dTable.dat',delimiter='\t')
+    
+    eps = 1e-10
+    n = dTable.shape[0]
+    yMin,yMax = dTable['distance'][0],dTable['distance'][n-1]
+    m = (yMax-yMin+2*eps)/(n-1)
+    c = yMin-eps
+    jMin = 0
+    
+    outFile = open('./dataset/kVector.dat','w')
+    outFile.write('Index\n0\n')
+    for i in tqdm(range(1,n-1)):
+        y = m*i+c
+        for j in range(jMin,n-1):
+            if (dTable['distance'][j]<=y and dTable['distance'][j+1]>y):
+                outFile.write('%d\n' %(j+1))
+                jMin = j
+                break
+    outFile.write('%d\n' %(n))
+    outFile.close()
+############################################################
+
+############################################################
+# K-VECTOR SEARCH
+############################################################
+def kVectorSearch(dMin,dMax):
+    kVector = pandas.read_csv('./dataset/kVector.dat',delimiter='\t')
+    dTable = pandas.read_csv('./dataset/dTable.dat',delimiter='\t')
+    
+    eps = 1e-10
+    n = dTable.shape[0]
+    yMin,yMax = dTable['distance'][0],dTable['distance'][n-1]
+    m = (yMax-yMin+2*eps)/(n-1)
+    c = yMin-eps
+    
+    startIndex = max(int(numpy.floor((dMin-c)/m)),0)
+    endIndex = min(int(numpy.ceil((dMax-c)/m)),n-1)
+    start = kVector['Index'][startIndex]
+    end = kVector['Index'][endIndex]
+    
+    return start,end
 ############################################################
