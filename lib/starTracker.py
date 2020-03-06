@@ -13,7 +13,6 @@ class starTracker:
         self.catalogueFileName = catalogueFileName
         self.FOVDegree = FOVDegree
         self.readCatalogue(catalogueFileName)
-        self.addCartesianCoordinates()
         [self.catalogueRow,self.catalogueCol] = self.catalogue.shape
         if (os.path.exists('./dataset/dTable.dat')==False):
             self.createDTable()
@@ -29,21 +28,15 @@ class starTracker:
     ############################################################
     def readCatalogue(self,fileName,skiprows=1):
         catalogue = numpy.loadtxt(fileName,dtype='float64',skiprows=skiprows)
-        self.catalogue = pandas.DataFrame(data=catalogue,columns=['RA(deg)','DEC(deg)','HIPNum','Mag'])
-        self.catalogue['HIPNum'] = self.catalogue['HIPNum'].astype('int32')
-        self.catalogue['RA(rad)'] = deg2rad(self.catalogue['RA(deg)'])
-        self.catalogue['DEC(rad)'] = deg2rad(self.catalogue['DEC(deg)'])
-    ############################################################
-    
-    ############################################################
-    # ADD CARTESIAN COORDINATES OF STARS TO CATALOGUE
-    ############################################################
-    def addCartesianCoordinates(self):
-        [row,col] = self.catalogue.shape
-        alphaR,deltaR = self.catalogue['RA(rad)'],self.catalogue['DEC(rad)']
-        self.catalogue['x'] = cos(deltaR)*cos(alphaR)
-        self.catalogue['y'] = cos(deltaR)*sin(alphaR)
-        self.catalogue['z'] = sin(deltaR)
+        catalogue = pandas.DataFrame(data=catalogue,columns=['RA(deg)','DEC(deg)','HIPNum','Mag'])
+        catalogue['HIPNum'] = catalogue['HIPNum'].astype('int32')
+        catalogue['RA(rad)'] = deg2rad(catalogue['RA(deg)'])
+        catalogue['DEC(rad)'] = deg2rad(catalogue['DEC(deg)'])
+        alphaR,deltaR = catalogue['RA(rad)'],catalogue['DEC(rad)']
+        catalogue['x'] = cos(deltaR)*cos(alphaR)
+        catalogue['y'] = cos(deltaR)*sin(alphaR)
+        catalogue['z'] = sin(deltaR)
+        self.catalogue = catalogue
     ############################################################
     
     ############################################################
@@ -155,9 +148,51 @@ class starTracker:
         errDEC = (numpy.random.rand(row)-0.5)*error
         stars['RA(deg)'] = stars['RA(deg)']+errRA
         stars['DEC(deg)'] = stars['DEC(deg)']+errDEC
+        stars['RA(rad)'] = deg2rad(stars['RA(deg)'])
+        stars['DEC(rad)'] = deg2rad(stars['DEC(deg)'])
+        
+        ############################################################
+        # CONVERTING TO CARTESIAN COORDINATES
+        alphaR,deltaR = stars['RA(rad)'],stars['DEC(rad)']
+        stars['x'] = cos(deltaR)*cos(alphaR)
+        stars['y'] = cos(deltaR)*sin(alphaR)
+        stars['z'] = sin(deltaR)
+        
+        ############################################################
+        # CALCULATING THE MAXIMUM POSSIBLE ERROR
+        angle1,angle2 = deg2rad(error),-deg2rad(error)
+        vec1 = [cos(angle1)*cos(angle1),cos(angle1)*sin(angle1),sin(angle1)]
+        vec2 = [cos(angle2)*cos(angle2),cos(angle2)*sin(angle2),sin(angle2)]
+        maxError = numpy.arccos(dot(vec1,vec2))
+        stars['Error'] = maxError
         self.stars = stars
     ############################################################
     
+    ############################################################
+    # CREATE THE DISTANCE TABLE FOR SIMULATED CAMERA IMAGE
+    ############################################################
+    def createTTable(self):
+        [row,col] = self.stars.shape
+        counter = 0
+        tTable = numpy.zeros([int(row*(row-1)/2),6])
+        for i in range(row-1):
+            for j in range(i+1,row):
+                vector1 = [self.stars['x'][i],self.stars['y'][i],self.stars['z'][i]]
+                vector2 = [self.stars['x'][j],self.stars['y'][j],self.stars['z'][j]]
+                distance = numpy.arccos(dot(vector1,vector2))
+                error = self.stars['Error'][i]+self.stars['Error'][j]
+                tTable[counter][0] = i+1
+                tTable[counter][1] = j+1
+                tTable[counter][2] = distance
+                tTable[counter][3] = error
+                tTable[counter][4] = distance-error
+                tTable[counter][5] = distance+error
+                counter += 1
+        tTable = pandas.DataFrame(data=tTable,columns=['id1','id2','distance','error','distance-error','distance+error'])
+        tTable['id1'] = tTable['id1'].astype('int32')
+        tTable['id2'] = tTable['id2'].astype('int32')
+        self.tTable = tTable
+    ############################################################
 
 
 # ############################################################
