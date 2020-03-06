@@ -174,24 +174,59 @@ class starTracker:
     def createTTable(self):
         [row,col] = self.stars.shape
         counter = 0
-        tTable = numpy.zeros([int(row*(row-1)/2),6])
+        tTable = numpy.zeros([int(row*(row-1)/2),8])
         for i in range(row-1):
             for j in range(i+1,row):
                 vector1 = [self.stars['x'][i],self.stars['y'][i],self.stars['z'][i]]
                 vector2 = [self.stars['x'][j],self.stars['y'][j],self.stars['z'][j]]
-                distance = numpy.arccos(dot(vector1,vector2))
-                error = self.stars['Error'][i]+self.stars['Error'][j]
+                distance = rad2deg(numpy.arccos(dot(vector1,vector2)))
+                error = rad2deg(self.stars['Error'][i])+rad2deg(self.stars['Error'][j])
                 tTable[counter][0] = i+1
                 tTable[counter][1] = j+1
                 tTable[counter][2] = distance
                 tTable[counter][3] = error
                 tTable[counter][4] = distance-error
                 tTable[counter][5] = distance+error
+                tTable[counter][6] = self.stars['HIPNum'][i]
+                tTable[counter][7] = self.stars['HIPNum'][j]
                 counter += 1
-        tTable = pandas.DataFrame(data=tTable,columns=['id1','id2','distance','error','distance-error','distance+error'])
+        tTable = pandas.DataFrame(data=tTable,columns=['id1','id2','distance','error','distance-error','distance+error','HIPNum1','HIPNum2'])
         tTable['id1'] = tTable['id1'].astype('int32')
         tTable['id2'] = tTable['id2'].astype('int32')
+        tTable['HIPNum1'] = tTable['HIPNum1'].astype('int32')
+        tTable['HIPNum2'] = tTable['HIPNum2'].astype('int32')
         self.tTable = tTable
+    ############################################################
+    
+    ############################################################
+    # K-VECTOR SEARCH FOR ALL THE DISTANCE IN T-TABLE
+    ############################################################
+    def kVectorSearch(self):
+        eps = 1e-10
+        n = self.dTable.shape[0]
+        yMin,yMax = self.dTable['distance'][0],self.dTable['distance'][n-1]
+        m = (yMax-yMin+2*eps)/(n-1)
+        c = yMin-eps
+        
+        startList,endList = [],[]
+        row = self.tTable.shape[0]
+        for i in range(row):
+            startIndex = max(int(numpy.floor((self.tTable['distance-error'][i]-c)/m)),0)
+            endIndex = min(int(numpy.ceil((self.tTable['distance-error'][i]-c)/m)),n-1)
+            start = self.kVector['Index'][startIndex]
+            end = self.kVector['Index'][endIndex]
+            for j in range(start,-1,-1):
+                if (self.dTable['distance'][j]<=self.tTable['distance-error'][i]):
+                    start = j
+                    break
+            for j in range(end,n):
+                if (self.dTable['distance'][j]>=self.tTable['distance+error'][i]):
+                    end = j
+                    break
+            startList.append(start)
+            endList.append(end)
+        self.tTable['start'] = startList
+        self.tTable['end'] = endList
     ############################################################
 
 
