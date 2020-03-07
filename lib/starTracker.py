@@ -16,9 +16,9 @@ class starTracker:
         [self.catalogueRow,self.catalogueCol] = self.catalogue.shape
         if (os.path.exists('./dataset/dTable.dat')==False):
             self.createDTable()
+        self.dTable = pandas.read_csv('./dataset/dTable.dat',delimiter='\t')    
         if (os.path.exists('./dataset/kVector.dat')==False):
             self.createKvector()
-        self.dTable = pandas.read_csv('./dataset/dTable.dat',delimiter='\t')
         self.kVector = pandas.read_csv('./dataset/kVector.dat',delimiter='\t')
     ############################################################
     
@@ -58,7 +58,7 @@ class starTracker:
                     dotProduct = 1.0
                 theta = rad2deg(numpy.arccos(dotProduct))
                 if (theta<=self.FOVDegree):
-                    outFile.write('%d\t%d\t%f\n' %(self.catalogue['HIPNum'][i],self.catalogue['HIPNum'][j],theta))
+                    outFile.write('%d\t%d\t%.10f\n' %(self.catalogue['HIPNum'][i],self.catalogue['HIPNum'][j],theta))
         outFile.close()
         
         dTable = pandas.read_csv('./dataset/dTable.dat',delimiter='\t')
@@ -66,7 +66,7 @@ class starTracker:
         outFile = open('./dataset/dTable.dat','w')
         outFile.write('HIPNum1\tHIPNum2\tdistance\n')
         for i in tqdm(dTable.index):
-            outFile.write('%d\t%d\t%f\n' %(dTable['HIPNum1'][i],dTable['HIPNum2'][i],dTable['distance'][i]))
+            outFile.write('%d\t%d\t%.10f\n' %(dTable['HIPNum1'][i],dTable['HIPNum2'][i],dTable['distance'][i]))
         outFile.close()
     ############################################################
     
@@ -140,7 +140,8 @@ class starTracker:
             stars = stars.head(num)
         else:
             print ('Found only %d stars.' %(row))
-        [row,col] = stars.shape
+        row = stars.shape[0]
+        stars['id'] = range(1,row+1)
         
         ############################################################
         # INTRODUCING ERROR IN STAR POSITION
@@ -219,34 +220,44 @@ class starTracker:
                 if (self.dTable['distance'][j]<=self.tTable['distance-error'][i]):
                     start = j
                     break
+            for j in range(start,n):
+                if (self.dTable['distance'][j]>=self.tTable['distance-error'][i]):
+                    start = j-1
+                    break
             for j in range(end,n):
                 if (self.dTable['distance'][j]>=self.tTable['distance+error'][i]):
                     end = j
+                    break
+            for j in range(end,-1,-1):
+                if (self.dTable['distance'][j]<=self.tTable['distance+error'][i]):
+                    end = j+1
                     break
             startList.append(start)
             endList.append(end)
         self.tTable['start'] = startList
         self.tTable['end'] = endList
     ############################################################
-
-
-# ############################################################
-# # K-VECTOR SEARCH
-# ############################################################
-# def kVectorSearch(dMin,dMax):
-    # kVector = pandas.read_csv('./dataset/kVector.dat',delimiter='\t')
-    # dTable = pandas.read_csv('./dataset/dTable.dat',delimiter='\t')
     
-    # eps = 1e-10
-    # n = dTable.shape[0]
-    # yMin,yMax = dTable['distance'][0],dTable['distance'][n-1]
-    # m = (yMax-yMin+2*eps)/(n-1)
-    # c = yMin-eps
+    ############################################################
+    # CHECK IF THE ENTRIES OF  T TABLE ARE CORRECT
+    ############################################################
+    def checkTTable(self):
+        row = self.tTable.shape[0]
+        for i in range(row):
+            start,end = self.tTable['start'][i],self.tTable['end'][i]
+            print (self.dTable.loc[start:end])
+    ############################################################
     
-    # startIndex = max(int(numpy.floor((dMin-c)/m)),0)
-    # endIndex = min(int(numpy.ceil((dMax-c)/m)),n-1)
-    # start = kVector['Index'][startIndex]
-    # end = kVector['Index'][endIndex]
+    ############################################################
+    # RUN THE PYRAMID STAR IDENTIFICATION ALGORITHM
+    ############################################################
+    def pyramid(self):
+        pass
+    ############################################################
     
-    # return start,end
-# ############################################################
+    ############################################################
+    # RUN THE GEOMETRIC-VOTING-PYRAMID STAR IDENTIFICATION ALGORITHM
+    ############################################################
+    def geometricPyramid(self):
+        pass
+    ############################################################
