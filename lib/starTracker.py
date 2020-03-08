@@ -252,7 +252,39 @@ class starTracker:
     # RUN THE PYRAMID STAR IDENTIFICATION ALGORITHM
     ############################################################
     def pyramid(self):
-        pass
+        candidates = {}
+        numStars = self.stars.shape[0]
+        for i in range(1,numStars+1):
+            candidates[i] = {}
+            for j in range(1,numStars+1):
+                candidates[i][j] = []
+                
+        row = self.tTable.shape[0]
+        for i in range(row):
+            start,end = self.tTable['start'][i],self.tTable['end'][i]
+            star1,star2 = self.tTable['id1'][i],self.tTable['id2'][i]
+            for j in range(start,end+1):
+                candidates[star1][star2].append([self.dTable['HIPNum1'][j],self.dTable['HIPNum2'][j]])
+                candidates[star1][star2].append([self.dTable['HIPNum2'][j],self.dTable['HIPNum1'][j]])
+                candidates[star2][star1].append([self.dTable['HIPNum1'][j],self.dTable['HIPNum2'][j]])
+                candidates[star2][star1].append([self.dTable['HIPNum2'][j],self.dTable['HIPNum1'][j]])
+                
+        for i in range(1,numStars-1):
+            for j in range(i+1,numStars):
+                for k in range(j+1,numStars+1):
+                    star1,star2,star3,flag = findTriangle(candidates[i][j],candidates[j][k],candidates[k][i])
+                    if (flag==1):
+                        break
+                if (flag==1):
+                    break
+            if (flag==1):
+                break
+                
+        for i in range(1,numStars+1):
+            if (i==star1 or i==star2 or i==star3):
+                pass
+            else:
+                star4,flag = findPyramid(candidates[star1][i],candidates[star2][i],candidates[star3][i])
     ############################################################
     
     ############################################################

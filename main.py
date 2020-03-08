@@ -15,7 +15,8 @@ ST.simCam(1,1,1,5,0.0)
 numStars = ST.stars.shape[0]
 if (numStars>=3):
     ST.createTTable()
+    print (ST.tTable)
     ST.kVectorSearch()
     ST.pyramid()
-    ST.geometricPyramid()
+    # ST.geometricPyramid()
     
